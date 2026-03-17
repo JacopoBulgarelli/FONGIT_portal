@@ -10,9 +10,9 @@ const config: Config = {
     extend: {
       colors: {
         fongit: {
-          navy: "#142850",
-          "navy-light": "#1b3a6b",
-          "navy-deep": "#0f1d36",
+          navy: "#2D35F0",
+          "navy-light": "#4a52f5",
+          "navy-deep": "#1e26d4",
         },
       },
       fontFamily: {

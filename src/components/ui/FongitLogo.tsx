@@ -3,29 +3,38 @@ interface FongitLogoProps {
   variant?: "dark" | "light";
 }
 
+// Faithful recreation of the FONGIT wordmark:
+// wide-tracked, semi-bold geometric grotesque, brand blue or white.
 export function FongitLogo({ size = 28, variant = "dark" }: FongitLogoProps) {
-  const isDark = variant === "dark";
+  const color = variant === "light" ? "#ffffff" : "#2D35F0";
+  // Scale everything from the size prop (treated as cap-height target)
+  const fontSize = size * 1.1;
+  const letterSpacing = size * 0.22;
+  // SVG width accounts for 6 letters + 5 gaps + side padding
+  const svgWidth = fontSize * 3.8 + letterSpacing * 5;
+  const svgHeight = fontSize * 1.35;
 
   return (
-    <div className="flex items-center gap-2.5">
-      <div
-        className={`rounded-full flex items-center justify-center font-display font-bold ${
-          isDark ? "bg-fongit-navy text-white" : "bg-white/20 text-white"
-        }`}
-        style={{
-          width: size,
-          height: size,
-          fontSize: size * 0.4,
-        }}
-      >
-        F
-      </div>
-      <span
-        className={`font-display ${isDark ? "text-fongit-navy" : "text-white"}`}
-        style={{ fontSize: size * 0.75, letterSpacing: -0.5 }}
+    <svg
+      width={svgWidth}
+      height={svgHeight}
+      viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+      aria-label="FONGIT"
+      role="img"
+      style={{ display: "block", flexShrink: 0 }}
+    >
+      <text
+        x="0"
+        y={svgHeight * 0.82}
+        fontFamily='"DM Sans", -apple-system, "Helvetica Neue", Arial, sans-serif'
+        fontWeight="700"
+        fontSize={fontSize}
+        letterSpacing={letterSpacing}
+        fill={color}
+        style={{ userSelect: "none" }}
       >
         FONGIT
-      </span>
-    </div>
+      </text>
+    </svg>
   );
 }
