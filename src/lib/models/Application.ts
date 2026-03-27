@@ -95,9 +95,17 @@ const ApplicationSchema = new Schema(
     documents: { type: DocumentsInfoSchema, required: true },
     status: {
       type: String,
-      enum: ["new", "review", "accepted", "rejected"],
-      default: "new",
+      enum: [
+        "applied", "phone_call", "screening_meeting",
+        "ii_1", "ii_2", "ii_3",
+        "is_1", "is_2", "is_3",
+        "full_support", "graduated", "exited", "rejected",
+      ],
+      default: "applied",
     },
+    assignedLeadCoach: { type: String, default: "" },
+    programType: { type: String, enum: ["Tech", "Life Sciences", ""], default: "" },
+    stageTransitionDates: { type: Map, of: String, default: {} },
     score: { type: Number, default: null },
     scoreBreakdown: {
       type: new Schema(

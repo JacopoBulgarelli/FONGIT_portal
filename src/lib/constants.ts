@@ -10,14 +10,44 @@ export const APPLICATION_STEPS: StepConfig[] = [
   { id: "review", label: "Review", icon: "✓" },
 ];
 
+// ── Pipeline stages in order ──────────────────────────────────────────────────
+
+export const PIPELINE_STAGES: ApplicationStatus[] = [
+  "applied",
+  "phone_call",
+  "screening_meeting",
+  "ii_1", "ii_2", "ii_3",
+  "is_1", "is_2", "is_3",
+  "full_support",
+  "graduated",
+  "exited",
+  "rejected",
+];
+
+// Stages that are "active" (startup is in the program)
+export const ACTIVE_STATUSES: ApplicationStatus[] = [
+  "ii_1", "ii_2", "ii_3",
+  "is_1", "is_2", "is_3",
+  "full_support",
+];
+
 export const STATUS_CONFIG: Record<
   ApplicationStatus,
-  { label: string; color: string; bg: string }
+  { label: string; shortLabel: string; color: string; bg: string; group: string }
 > = {
-  new: { label: "New", color: "text-blue-600", bg: "bg-blue-50" },
-  review: { label: "Under Review", color: "text-orange-600", bg: "bg-orange-50" },
-  accepted: { label: "Accepted", color: "text-green-700", bg: "bg-green-50" },
-  rejected: { label: "Declined", color: "text-red-600", bg: "bg-red-50" },
+  applied:            { label: "Applied",             shortLabel: "Applied",    color: "text-blue-600",   bg: "bg-blue-50",   group: "pipeline" },
+  phone_call:         { label: "Phone Call",          shortLabel: "Phone",      color: "text-blue-600",   bg: "bg-blue-50",   group: "pipeline" },
+  screening_meeting:  { label: "Screening Meeting",   shortLabel: "Screening",  color: "text-purple-600", bg: "bg-purple-50", group: "pipeline" },
+  ii_1:               { label: "Innovation Init. I",  shortLabel: "II-1",       color: "text-fongit-navy",bg: "bg-indigo-50", group: "innovation" },
+  ii_2:               { label: "Innovation Init. II", shortLabel: "II-2",       color: "text-fongit-navy",bg: "bg-indigo-50", group: "innovation" },
+  ii_3:               { label: "Innovation Init. III",shortLabel: "II-3",       color: "text-fongit-navy",bg: "bg-indigo-50", group: "innovation" },
+  is_1:               { label: "Initial Support I",   shortLabel: "IS-1",       color: "text-fongit-navy",bg: "bg-violet-50", group: "support" },
+  is_2:               { label: "Initial Support II",  shortLabel: "IS-2",       color: "text-fongit-navy",bg: "bg-violet-50", group: "support" },
+  is_3:               { label: "Initial Support III", shortLabel: "IS-3",       color: "text-fongit-navy",bg: "bg-violet-50", group: "support" },
+  full_support:       { label: "Full Support",        shortLabel: "Full",       color: "text-green-700",  bg: "bg-green-50",  group: "support" },
+  graduated:          { label: "Graduated",           shortLabel: "Graduated",  color: "text-green-700",  bg: "bg-green-50",  group: "outcome" },
+  exited:             { label: "Exited",              shortLabel: "Exited",     color: "text-gray-600",   bg: "bg-gray-100",  group: "outcome" },
+  rejected:           { label: "Rejected",            shortLabel: "Rejected",   color: "text-red-600",    bg: "bg-red-50",    group: "outcome" },
 };
 
 export const STAGE_OPTIONS = ["Idea", "Prototype", "Users", "Paying Users"] as const;

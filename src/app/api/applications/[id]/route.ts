@@ -44,7 +44,10 @@ export async function PATCH(
 
   // Only allow updating admin-safe fields
   const allowed: Record<string, unknown> = {};
-  for (const key of ["status", "score", "internalNotes"] as const) {
+  for (const key of [
+    "status", "score", "internalNotes",
+    "assignedLeadCoach", "programType", "stageTransitionDates",
+  ] as const) {
     if (key in body) allowed[key] = body[key];
   }
   allowed.updatedAt = new Date().toISOString();

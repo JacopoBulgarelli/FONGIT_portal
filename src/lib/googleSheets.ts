@@ -43,6 +43,10 @@ function buildRow(app: Application): string[] {
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
 
+function getTabName() {
+  return process.env.GOOGLE_SHEET_TAB_NAME || "Sheet1";
+}
+
 function getAuth() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!raw || raw === "'{}'" || raw === "{}") return null;
@@ -88,7 +92,7 @@ export async function appendApplicationRow(app: Application): Promise<void> {
     const sheets = google.sheets({ version: "v4", auth });
     await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
-      range: "Sheet1!A:N",
+      range: `${getTabName()}!A:N`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [buildRow(app)] },
     });
@@ -113,7 +117,7 @@ export async function updateApplicationRow(app: Application): Promise<void> {
     // Read column A to find the matching row index
     const readRes = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "Sheet1!A:A",
+      range: `${getTabName()}!A:A`,
     });
 
     const colA = readRes.data.values ?? [];
@@ -129,7 +133,7 @@ export async function updateApplicationRow(app: Application): Promise<void> {
     const sheetRow = rowIndex + 1; // convert 0-based array index to 1-based sheet row
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range: `Sheet1!A${sheetRow}:N${sheetRow}`,
+      range: `${getTabName()}!A${sheetRow}:N${sheetRow}`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [buildRow(app)] },
     });

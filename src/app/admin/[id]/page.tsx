@@ -3,7 +3,80 @@
 import { use, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { FongitLogo, StatusBadge } from "@/components/ui";
+import { STATUS_CONFIG, PIPELINE_STAGES } from "@/lib/constants";
 import type { Application, ApplicationStatus, ScoreBreakdown, AISummary } from "@/lib/types";
+
+// Visual groups for the pipeline indicator
+const PIPELINE_GROUPS = [
+  { label: "Intake",    stages: ["applied", "phone_call", "screening_meeting"] as ApplicationStatus[] },
+  { label: "Innov. Init.", stages: ["ii_1", "ii_2", "ii_3"] as ApplicationStatus[] },
+  { label: "Init. Support", stages: ["is_1", "is_2", "is_3"] as ApplicationStatus[] },
+  { label: "Full Support", stages: ["full_support"] as ApplicationStatus[] },
+  { label: "Outcome",  stages: ["graduated", "exited", "rejected"] as ApplicationStatus[] },
+];
+
+function PipelineIndicator({
+  current,
+  onAdvance,
+  disabled,
+}: {
+  current: ApplicationStatus;
+  onAdvance: (s: ApplicationStatus) => void;
+  disabled: boolean;
+}) {
+  const currentIdx = PIPELINE_STAGES.indexOf(current);
+  const isTerminal = ["graduated", "exited", "rejected"].includes(current);
+
+  return (
+    <div className="card px-6 py-5 mb-3">
+      <div className="text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-4">
+        Pipeline Stage
+      </div>
+      {/* Group headers */}
+      <div className="flex gap-1 mb-1">
+        {PIPELINE_GROUPS.map((g) => (
+          <div
+            key={g.label}
+            style={{ flex: g.stages.length }}
+            className="text-[10px] text-center text-gray-400 font-medium tracking-wide"
+          >
+            {g.label}
+          </div>
+        ))}
+      </div>
+      {/* Stage dots */}
+      <div className="flex gap-1 items-center">
+        {PIPELINE_STAGES.map((stage, idx) => {
+          const isPast    = idx < currentIdx;
+          const isCurrent = stage === current;
+          const isFuture  = idx > currentIdx;
+          const cfg = STATUS_CONFIG[stage];
+          return (
+            <button
+              key={stage}
+              onClick={() => !disabled && !isCurrent && onAdvance(stage)}
+              disabled={disabled || isCurrent}
+              title={cfg.label}
+              className={`flex-1 h-7 rounded-sm text-[10px] font-semibold transition-all duration-150
+                ${isCurrent ? `${cfg.bg} ${cfg.color} ring-2 ring-offset-1 ring-current` : ""}
+                ${isPast    ? "bg-fongit-navy/10 text-fongit-navy/60" : ""}
+                ${isFuture  ? "bg-gray-100 text-gray-400 hover:bg-gray-200" : ""}
+                ${disabled  ? "cursor-default" : isCurrent ? "cursor-default" : "cursor-pointer"}
+              `}
+            >
+              {cfg.shortLabel}
+            </button>
+          );
+        })}
+      </div>
+      {!isTerminal && (
+        <div className="text-[11px] text-gray-400 mt-2">
+          Click any stage to move the startup there.
+        </div>
+      )}
+    </div>
+  );
+}
 
 const SCORE_CATEGORIES: { key: keyof ScoreBreakdown; label: string; weight: string }[] = [
   { key: "team", label: "Team Strength", weight: "25%" },
@@ -211,6 +284,8 @@ export default function AdminDetailPage({
   const [notes, setNotes] = useState("");
   const [updating, setUpdating] = useState(false);
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
+  const [leadCoach, setLeadCoach] = useState("");
+  const [programType, setProgramType] = useState<"Tech" | "Life Sciences" | "">("");
 
   const fetchApp = useCallback(async () => {
     const res = await fetch(`/api/applications/${id}`);
@@ -219,6 +294,8 @@ export default function AdminDetailPage({
       setApp(data.application);
       setNotes(data.application.internalNotes ?? "");
       setAiSummary(data.application.aiSummary ?? null);
+      setLeadCoach(data.application.assignedLeadCoach ?? "");
+      setProgramType(data.application.programType ?? "");
     }
     setLoading(false);
   }, [id]);
@@ -233,6 +310,39 @@ export default function AdminDetailPage({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status, internalNotes: notes }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setApp(data.application);
+    }
+    setUpdating(false);
+  };
+
+  const advanceStage = async (status: ApplicationStatus) => {
+    if (!app) return;
+    setUpdating(true);
+    const newDates = {
+      ...(app.stageTransitionDates ?? {}),
+      [status]: new Date().toISOString(),
+    };
+    const res = await fetch(`/api/applications/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, stageTransitionDates: newDates }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setApp(data.application);
+    }
+    setUpdating(false);
+  };
+
+  const saveMetadata = async () => {
+    setUpdating(true);
+    const res = await fetch(`/api/applications/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignedLeadCoach: leadCoach, programType }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -293,20 +403,34 @@ export default function AdminDetailPage({
     },
     {
       title: "Team",
-      content: app.team
-        .map(
-          (m) =>
-            `${m.firstName} ${m.lastName} (${m.role}) — ${m.description}`
-        )
-        .join("\n"),
+      content: app.team?.length
+        ? app.team
+            .map((m) => `${m.firstName} ${m.lastName}${m.role ? ` (${m.role})` : ""}${m.description ? ` — ${m.description}` : ""}`)
+            .join("\n")
+        : "",
     },
     {
       title: "IP & Research Links",
-      content: `${app.marketIP.intellectualProperty}\nConnected with: ${app.marketIP.researchOrgs.join(", ")}`,
+      content: [
+        app.marketIP?.intellectualProperty,
+        app.marketIP?.researchOrgs?.length
+          ? `Connected with: ${app.marketIP.researchOrgs.join(", ")}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
     },
     {
       title: "FONGIT Fit",
-      content: `${app.fongitFit.genevaStatus.join(", ")}. Seeking: ${app.fongitFit.supportSeeking.join(", ")}. Runway: ${app.project.runwayMonths} months.\n${app.fongitFit.howCanFongitHelp}`,
+      content: [
+        app.fongitFit?.genevaStatus?.join(", "),
+        app.fongitFit?.supportSeeking?.length ? `Seeking: ${app.fongitFit.supportSeeking.join(", ")}` : "",
+        app.project?.runwayMonths ? `Runway: ${app.project.runwayMonths} months` : "",
+        app.fongitFit?.howCanFongitHelp,
+      ]
+        .filter(Boolean)
+        .join(". ")
+        .replace(/\.\./g, "."),
     },
   ];
 
@@ -336,11 +460,57 @@ export default function AdminDetailPage({
               {app.company.name}
             </h1>
             <p className="text-[15px] text-gray-500">
-              {app.team[0]?.firstName} {app.team[0]?.lastName} ·{" "}
-              {app.company.markets.split(",")[0]} · {app.company.location}
+              {app.team[0]?.firstName} {app.team[0]?.lastName}
+              {app.company.markets ? ` · ${app.company.markets.split(",")[0].trim()}` : ""}
+              {app.company.location ? ` · ${app.company.location}` : ""}
             </p>
           </div>
           <StatusBadge status={app.status} />
+        </div>
+
+        {/* ── Pipeline Indicator ── */}
+        <PipelineIndicator
+          current={app.status}
+          onAdvance={advanceStage}
+          disabled={updating}
+        />
+
+        {/* ── Metadata (coach / program type) ── */}
+        <div className="card px-6 py-5 mb-5">
+          <div className="text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-3">
+            Program Details
+          </div>
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <label className="block text-[11px] text-gray-500 mb-1">Lead Coach</label>
+              <input
+                type="text"
+                value={leadCoach}
+                onChange={(e) => setLeadCoach(e.target.value)}
+                placeholder="Unassigned"
+                className="w-full px-3 py-2 border-[1.5px] border-gray-200 rounded-md text-sm outline-none focus:border-fongit-navy transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-1">Program Type</label>
+              <select
+                value={programType}
+                onChange={(e) => setProgramType(e.target.value as "Tech" | "Life Sciences" | "")}
+                className="px-3 py-2 border-[1.5px] border-gray-200 rounded-md text-sm outline-none focus:border-fongit-navy transition-colors bg-white"
+              >
+                <option value="">Not set</option>
+                <option value="Tech">Tech</option>
+                <option value="Life Sciences">Life Sciences</option>
+              </select>
+            </div>
+            <button
+              onClick={saveMetadata}
+              disabled={updating}
+              className="btn-secondary text-sm py-2 disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
         </div>
 
         {/* ── Detail Sections ── */}
@@ -401,18 +571,18 @@ export default function AdminDetailPage({
 
           <div className="flex gap-2.5">
             <button
-              onClick={() => updateStatus("accepted")}
+              onClick={() => advanceStage("ii_1")}
               disabled={updating}
-              className="px-5 py-2.5 bg-green-700 text-white rounded-md text-sm font-semibold hover:bg-green-800 transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-fongit-navy text-white rounded-md text-sm font-semibold hover:bg-fongit-navy-light transition-colors disabled:opacity-50"
             >
-              Accept
+              → Move to II-1
             </button>
             <button
-              onClick={() => updateStatus("review")}
+              onClick={() => advanceStage("phone_call")}
               disabled={updating}
               className="btn-secondary text-sm py-2.5 disabled:opacity-50"
             >
-              Mark Under Review
+              → Phone Call
             </button>
             <button
               onClick={saveNotes}
@@ -422,11 +592,11 @@ export default function AdminDetailPage({
               Save Notes
             </button>
             <button
-              onClick={() => updateStatus("rejected")}
+              onClick={() => advanceStage("rejected")}
               disabled={updating}
               className="btn-danger-soft disabled:opacity-50"
             >
-              Decline
+              Reject
             </button>
           </div>
         </div>

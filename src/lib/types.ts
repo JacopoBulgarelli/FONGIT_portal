@@ -1,7 +1,18 @@
 // ── Application Data Model ───────────────────────────────────────────────────
 // This mirrors every field collected in the F6S form, structured for our DB.
 
-export type ApplicationStatus = "new" | "review" | "accepted" | "rejected";
+export type ApplicationStatus =
+  | "applied"
+  | "phone_call"
+  | "screening_meeting"
+  | "ii_1" | "ii_2" | "ii_3"
+  | "is_1" | "is_2" | "is_3"
+  | "full_support"
+  | "graduated"
+  | "exited"
+  | "rejected";
+
+export type ProgramType = "Tech" | "Life Sciences" | "";
 export type Stage = "Idea" | "Prototype" | "Users" | "Paying Users";
 export type CustomerType = "B2B" | "B2C" | "B2G" | "Marketplace" | "Licensing";
 export type ProductChannel = "Desktop" | "Mobile" | "Server Software" | "Hardware" | "API" | "Wearable" | "iOS";
@@ -120,6 +131,9 @@ export interface Application {
   scoreBreakdown: ScoreBreakdown | null;
   aiSummary: AISummary | null;
   internalNotes: string;
+  assignedLeadCoach: string;
+  programType: ProgramType;
+  stageTransitionDates: Partial<Record<ApplicationStatus, string>>;
   submittedAt: string; // ISO date
   updatedAt: string;
 }
