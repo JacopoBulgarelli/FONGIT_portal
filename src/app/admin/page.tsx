@@ -33,10 +33,15 @@ export default function AdminPage() {
 
   const fetchApplications = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/applications");
-    const data = await res.json();
-    setApplications(data.applications ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/applications");
+      const data = await res.json();
+      setApplications(data.applications ?? []);
+    } catch {
+      setApplications([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {

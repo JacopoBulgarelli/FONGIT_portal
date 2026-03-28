@@ -50,10 +50,15 @@ export default function PortfolioPage() {
   const [filterProgramType, setFilterProgramType] = useState("all");
 
   const fetchApplications = useCallback(async () => {
-    const res = await fetch("/api/applications");
-    const data = await res.json();
-    setApplications(data.applications ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/applications");
+      const data = await res.json();
+      setApplications(data.applications ?? []);
+    } catch {
+      setApplications([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchApplications(); }, [fetchApplications]);
@@ -268,7 +273,7 @@ export default function PortfolioPage() {
               </thead>
               <tbody>
                 {filtered.map((app) => {
-                  const statusCfg = STATUS_CONFIG[app.status];
+                  const statusCfg = STATUS_CONFIG[app.status] ?? { bg: "bg-gray-100", color: "text-gray-500", shortLabel: app.status };
                   const founders = app.team
                     .slice(0, 2)
                     .map((m) => `${m.firstName} ${m.lastName}`.trim())

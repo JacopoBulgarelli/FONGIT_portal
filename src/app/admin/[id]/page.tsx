@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { FongitLogo, StatusBadge } from "@/components/ui";
 import { STATUS_CONFIG, PIPELINE_STAGES } from "@/lib/constants";
@@ -276,9 +276,9 @@ function AISummaryCard({
 export default function AdminDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = use(params);
+  const { id } = params;
   const [app, setApp] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
@@ -288,16 +288,21 @@ export default function AdminDetailPage({
   const [programType, setProgramType] = useState<"Tech" | "Life Sciences" | "">("");
 
   const fetchApp = useCallback(async () => {
-    const res = await fetch(`/api/applications/${id}`);
-    if (res.ok) {
-      const data = await res.json();
-      setApp(data.application);
-      setNotes(data.application.internalNotes ?? "");
-      setAiSummary(data.application.aiSummary ?? null);
-      setLeadCoach(data.application.assignedLeadCoach ?? "");
-      setProgramType(data.application.programType ?? "");
+    try {
+      const res = await fetch(`/api/applications/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setApp(data.application);
+        setNotes(data.application.internalNotes ?? "");
+        setAiSummary(data.application.aiSummary ?? null);
+        setLeadCoach(data.application.assignedLeadCoach ?? "");
+        setProgramType(data.application.programType ?? "");
+      }
+    } catch {
+      // API unreachable — app stays null, loading ends
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [id]);
 
   useEffect(() => {
